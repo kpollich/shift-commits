@@ -1,9 +1,10 @@
 import gql from "graphql-tag";
 import * as React from "react";
 import { Query } from "react-apollo";
+import Repository from "../Repository/Repository";
 import {
   RecentCommits,
-  RecentCommits_organization_repositories_edges_node_defaultBranchRef_target_Commit
+  RecentCommits_organization_repositories_edges_node_defaultBranchRef_target_Commit as RefCommit
 } from "./__generated__/RecentCommits";
 
 const RECENT_COMMITS_QUERY = gql`
@@ -61,23 +62,43 @@ function CommitList() {
 
         return (
           <div>
-            {data.organization!.repositories!.edges!.map(edge => {
-              if (!edge || !edge.node) {
+            {data.organization!.repositories!.edges!.map(repositoryEdge => {
+              if (!repositoryEdge || !repositoryEdge.node) {
                 return null;
               }
 
-              const { node } = edge;
+              const { node } = repositoryEdge;
 
-              if (!node.defaultBranchRef) {
+              if (
+                !node.defaultBranchRef ||
+                !isRefCommit(node.defaultBranchRef.target)
+              ) {
                 return null;
               }
 
-              const foo = node.defaultBranchRef.target.history;
+              const commits = node.defaultBranchRef.target.history.edges!.map(
+                edge => {
+                  if (!edge || !edge.node) {
+                    return null;
+                  }
+
+                  return {
+                    author: {
+                      login: edge.node.author!.user!.login,
+                      url: edge.node.author!.user!.url as string
+                    },
+                    message: edge.node.message,
+                    url: edge.node.commitUrl
+                  };
+                }
+              );
 
               return (
-                <div key={node.name}>
-                  <h1>{node.name}</h1>
-                </div>
+                <Repository
+                  key={node.name}
+                  name={node.name}
+                  commits={commits}
+                />
               );
             })}
           </div>
@@ -85,6 +106,10 @@ function CommitList() {
       }}
     </RecentCommitsQuery>
   );
+}
+
+function isRefCommit(target: any): target is RefCommit {
+  return target.history !== undefined;
 }
 
 export default CommitList;
