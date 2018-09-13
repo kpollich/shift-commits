@@ -43,15 +43,9 @@ function CommitList(): JSX.Element {
 
         return (
           <div>
-            {repositories.map(repo => {
-              return (
-                <Repository
-                  commits={repo.commits}
-                  key={repo.name}
-                  name={repo.name}
-                />
-              );
-            })}
+            {repositories.map(repo => (
+              <Repository key={repo.name} {...repo} />
+            ))}
           </div>
         );
       }}
