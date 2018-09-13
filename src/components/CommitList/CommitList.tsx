@@ -1,50 +1,19 @@
-import gql from "graphql-tag";
 import * as React from "react";
 import { Query } from "react-apollo";
+import ICommit from "../../interfaces/ICommit";
+import IRepository from "../../interfaces/IRepository";
+import RECENT_COMMITS_QUERY from "../../queries/RecentCommits";
 import Repository from "../Repository/Repository";
 import {
   RecentCommits,
-  RecentCommits_organization_repositories_edges_node_defaultBranchRef_target_Commit as RefCommit
+  RecentCommits_organization_repositories_edges as RepositoryEdge,
+  RecentCommits_organization_repositories_edges_node_defaultBranchRef_target_Commit as RefCommit,
+  RecentCommits_organization_repositories_edges_node_defaultBranchRef_target_Commit_history_edges as HistoryEdge
 } from "./__generated__/RecentCommits";
-
-const RECENT_COMMITS_QUERY = gql`
-  query RecentCommits {
-    organization(login: "shiftlab") {
-      repositories(first: 10, orderBy: { field: PUSHED_AT, direction: DESC }) {
-        edges {
-          node {
-            name
-            defaultBranchRef {
-              target {
-                ... on Commit {
-                  history(first: 5) {
-                    edges {
-                      node {
-                        message
-                        commitUrl
-                        author {
-                          user {
-                            login
-                            avatarUrl
-                            url
-                          }
-                        }
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          }
-        }
-      }
-    }
-  }
-`;
 
 class RecentCommitsQuery extends Query<RecentCommits> {}
 
-function CommitList() {
+function CommitList(): JSX.Element {
   return (
     <RecentCommitsQuery query={RECENT_COMMITS_QUERY}>
       {({ loading, error, data }) => {
@@ -60,44 +29,26 @@ function CommitList() {
           return <div>No commits found :(</div>;
         }
 
+        if (
+          !data.organization ||
+          !data.organization.repositories ||
+          !data.organization.repositories.edges
+        ) {
+          return <div>No repositories found :(</div>;
+        }
+
+        const repositories: IRepository[] = getRepositories(
+          data.organization.repositories.edges
+        );
+
         return (
           <div>
-            {data.organization!.repositories!.edges!.map(repositoryEdge => {
-              if (!repositoryEdge || !repositoryEdge.node) {
-                return null;
-              }
-
-              const { node } = repositoryEdge;
-
-              if (
-                !node.defaultBranchRef ||
-                !isRefCommit(node.defaultBranchRef.target)
-              ) {
-                return null;
-              }
-
-              const commits = node.defaultBranchRef.target.history.edges!.map(
-                edge => {
-                  if (!edge || !edge.node) {
-                    return null;
-                  }
-
-                  return {
-                    author: {
-                      login: edge.node.author!.user!.login,
-                      url: edge.node.author!.user!.url as string
-                    },
-                    message: edge.node.message,
-                    url: edge.node.commitUrl
-                  };
-                }
-              );
-
+            {repositories.map(repo => {
               return (
                 <Repository
-                  key={node.name}
-                  name={node.name}
-                  commits={commits}
+                  commits={repo.commits}
+                  key={repo.name}
+                  name={repo.name}
                 />
               );
             })}
@@ -110,6 +61,50 @@ function CommitList() {
 
 function isRefCommit(target: any): target is RefCommit {
   return target.history !== undefined;
+}
+
+function getRepositories(data: Array<RepositoryEdge | null>): IRepository[] {
+  return data.reduce((acc, edge) => {
+    if (!edge || !edge.node) {
+      return acc;
+    }
+
+    const { node } = edge;
+
+    if (!node.defaultBranchRef || !isRefCommit(node.defaultBranchRef.target)) {
+      return acc;
+    }
+
+    const commits = node.defaultBranchRef.target.history.edges
+      ? getCommits(node.defaultBranchRef.target.history.edges)
+      : [];
+
+    acc.push({
+      commits,
+      name: node.name
+    });
+
+    return acc;
+  }, new Array<IRepository>());
+}
+
+function getCommits(data: Array<HistoryEdge | null>): ICommit[] {
+  return data.reduce((acc, edge) => {
+    if (!edge || !edge.node) {
+      return acc;
+    }
+
+    acc.push({
+      author: {
+        login: edge.node.author!.user!.login,
+        url: edge.node.author!.user!.url as string
+      },
+      message: edge.node.message,
+      url: edge.node.commitUrl
+    });
+
+    return acc;
+  }, new Array<ICommit>());
 }
 
 export default CommitList;

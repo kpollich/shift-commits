@@ -1,12 +1,7 @@
 import * as React from "react";
-import ICommit from "../../interfaces/ICommit";
+import IRepository from "../../interfaces/IRepository";
 
-interface IRepositoryProps {
-  name: string;
-  commits: Array<ICommit | null>;
-}
-
-function Repository(props: IRepositoryProps) {
+function Repository(props: IRepository) {
   const { name, commits } = props;
 
   return (
