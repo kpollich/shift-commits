@@ -1,7 +1,10 @@
 import gql from "graphql-tag";
 import * as React from "react";
 import { Query } from "react-apollo";
-import { RecentCommits } from "./__generated__/RecentCommits";
+import {
+  RecentCommits,
+  RecentCommits_organization_repositories_edges_node_defaultBranchRef_target_Commit
+} from "./__generated__/RecentCommits";
 
 const RECENT_COMMITS_QUERY = gql`
   query RecentCommits {
@@ -63,7 +66,19 @@ function CommitList() {
                 return null;
               }
 
-              return <h1 key={edge.node.name}>{edge.node.name}</h1>;
+              const { node } = edge;
+
+              if (!node.defaultBranchRef) {
+                return null;
+              }
+
+              const foo = node.defaultBranchRef.target.history;
+
+              return (
+                <div key={node.name}>
+                  <h1>{node.name}</h1>
+                </div>
+              );
             })}
           </div>
         );
