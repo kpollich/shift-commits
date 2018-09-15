@@ -1,5 +1,12 @@
 import * as React from "react";
+import styled from "styled-components";
 import IRepository from "../../interfaces/IRepository";
+import CommitCard from "../CommitCard/CommitCard";
+
+const CommitsUl = styled.ul`
+  list-style: none;
+  padding: 0;
+`;
 
 function Repository(props: IRepository) {
   const { name, commits } = props;
@@ -8,7 +15,7 @@ function Repository(props: IRepository) {
     <div>
       <h1>{name}</h1>
 
-      <ul>
+      <CommitsUl>
         {commits &&
           commits.map(commit => {
             if (!commit) {
@@ -17,15 +24,11 @@ function Repository(props: IRepository) {
 
             return (
               <li key={commit.message}>
-                <div>"{commit.message}"</div>
-                <span>
-                  --
-                  {commit.author.login}
-                </span>
+                <CommitCard {...commit} />
               </li>
             );
           })}
-      </ul>
+      </CommitsUl>
     </div>
   );
 }

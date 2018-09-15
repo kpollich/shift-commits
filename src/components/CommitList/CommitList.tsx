@@ -13,7 +13,7 @@ import {
 
 class RecentCommitsQuery extends Query<RecentCommits> {}
 
-function CommitList(): JSX.Element {
+const CommitList: React.SFC<{}> = () => {
   return (
     <RecentCommitsQuery query={RECENT_COMMITS_QUERY}>
       {({ loading, error, data }) => {
@@ -21,24 +21,12 @@ function CommitList(): JSX.Element {
           return <div>Loading...</div>;
         }
 
-        if (error) {
+        if (error || !data) {
           return <div>Error fetching commits</div>;
         }
 
-        if (!data) {
-          return <div>No commits found :(</div>;
-        }
-
-        if (
-          !data.organization ||
-          !data.organization.repositories ||
-          !data.organization.repositories.edges
-        ) {
-          return <div>No repositories found :(</div>;
-        }
-
         const repositories: IRepository[] = getRepositories(
-          data.organization.repositories.edges
+          data!.organization!.repositories!.edges || []
         );
 
         return (
@@ -51,7 +39,7 @@ function CommitList(): JSX.Element {
       }}
     </RecentCommitsQuery>
   );
-}
+};
 
 function isRefCommit(target: any): target is RefCommit {
   return target.history !== undefined;

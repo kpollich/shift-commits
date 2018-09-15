@@ -2,6 +2,7 @@ import ApolloClient, { InMemoryCache } from "apollo-boost";
 import * as React from "react";
 import { ApolloProvider } from "react-apollo";
 import CommitList from "../CommitList/CommitList";
+import Layout from "../Layout/Layout";
 
 const client: ApolloClient<InMemoryCache> = new ApolloClient({
   headers: {
@@ -13,7 +14,9 @@ const client: ApolloClient<InMemoryCache> = new ApolloClient({
 function App() {
   return (
     <ApolloProvider client={client}>
-      <CommitList />
+      <Layout>
+        <CommitList />
+      </Layout>
     </ApolloProvider>
   );
 }
